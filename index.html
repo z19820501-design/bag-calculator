@@ -107,7 +107,7 @@ th{background:#eef3fb}th:first-child,td:first-child{text-align:left}
 </section>
 
 <section id="inventory" style="display:none">
-<h2>客戶產品庫存管理</h2>
+<h2>客戶產品庫存管理 <span style="font-size:12px;color:#888;font-weight:400">v2.1</span></h2>
 
 <div id="authPanel" class="card">
   <h2 style="margin-top:0">庫存系統登入</h2>
@@ -207,8 +207,10 @@ th{background:#eef3fb}th:first-child,td:first-child{text-align:left}
 <div id="invSetup" class="invsection">
   <div class="card">
     <h2 style="margin-top:0">期初庫存設定</h2>
+    <div id="setupMsg" class="note" style="margin:0 0 10px;color:#b35c00"></div>
     <div class="setup-grid" id="initialGrid"></div>
-    <div style="margin-top:12px">
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-gray" onclick="forceCreateProducts()">建立／修復 6 種產品</button>
       <button class="btn btn-blue" onclick="saveInitial()">儲存期初庫存</button>
       <span id="initialStatus" style="display:none;color:#238636;font-weight:700;margin-left:8px">已儲存</span>
     </div>
@@ -337,6 +339,20 @@ let transactions=[];
 let editingId=null;
 let currentSession=null;
 
+const DEFAULT_PRODUCTS=[
+  {name:"18Kg LDPE 袋(黃)",sort_order:1},
+  {name:"18Kg LDPE 袋(綠)",sort_order:2},
+  {name:"18Kg LDPE 袋(紅)",sort_order:3},
+  {name:"18Kg LDPE 袋(藍)",sort_order:4},
+  {name:"18Kg LDPE 袋(橘)",sort_order:5},
+  {name:"18Kg LDPE 袋(紫)",sort_order:6}
+];
+
+function setSetupMsg(msg,color="#b35c00"){
+  const el=q("setupMsg");
+  if(el){el.textContent=msg||"";el.style.color=color;}
+}
+
 async function refreshAuth(){
   const {data:{session}}=await supabaseClient.auth.getSession();
   currentSession=session;
@@ -381,7 +397,10 @@ function showInv(id){
   Object.values(map).forEach(b=>q(b).classList.remove("active"));
   q(map[id]).classList.add("active");
   if(id==="invHistory")renderHistory();
-  if(id==="invSetup")renderInitial();
+  if(id==="invSetup"){
+    renderInitial();
+    if(!products.length)setSetupMsg("目前尚未載入產品資料，請按「建立／修復 6 種產品」。","#c62828");
+  }
   if(id==="invRecycle")renderRecycle();
 }
 function todayLocal(){
@@ -427,43 +446,47 @@ function openCalendar(id){
   if(picker.showPicker)picker.showPicker();else picker.click();
 }
 
-const DEFAULT_PRODUCTS=[
-  {name:"18Kg LDPE 袋(黃)",sort_order:1},
-  {name:"18Kg LDPE 袋(綠)",sort_order:2},
-  {name:"18Kg LDPE 袋(紅)",sort_order:3},
-  {name:"18Kg LDPE 袋(藍)",sort_order:4},
-  {name:"18Kg LDPE 袋(橘)",sort_order:5},
-  {name:"18Kg LDPE 袋(紫)",sort_order:6}
-];
+async function forceCreateProducts(){
+  if(!currentSession){alert("請先登入");return;}
+  setSetupMsg("正在建立 6 種產品…");
+  const {data,error}=await supabaseClient
+    .from("products")
+    .insert(DEFAULT_PRODUCTS)
+    .select("id,name,sort_order");
+
+  if(error){
+    setSetupMsg("建立失敗："+error.message,"#c62828");
+    alert("Supabase 建立產品失敗：\n"+error.message+"\n\n把這個錯誤畫面傳給我，我就能判斷權限要改哪裡。");
+    return;
+  }
+  setSetupMsg("6 種產品已建立，正在重新載入…","#238636");
+  await loadInventoryData();
+}
 
 async function loadInventoryData(){
   if(!currentSession)return;
+
   q("stockGrid").innerHTML='<div class="note">載入中央資料中…</div>';
+  setSetupMsg("正在讀取產品資料…");
 
   let pRes=await supabaseClient.from("products").select("id,name,sort_order").order("sort_order");
 
   if(pRes.error){
     q("stockGrid").innerHTML=`<div class="note">讀取產品資料失敗：${pRes.error.message}</div>`;
-    q("initialGrid").innerHTML=`<div class="note">無法載入期初庫存設定。</div>`;
+    q("initialGrid").innerHTML="";
+    setSetupMsg("讀取 products 失敗："+pRes.error.message,"#c62828");
     return;
   }
 
-  // 第一次使用時，如果 products 資料表是空的，自動建立固定 6 種產品
-  if((pRes.data||[]).length===0){
-    q("stockGrid").innerHTML='<div class="note">第一次使用，正在建立 6 種產品…</div>';
+  products=pRes.data||[];
 
-    const seedRes=await supabaseClient
-      .from("products")
-      .insert(DEFAULT_PRODUCTS)
-      .select("id,name,sort_order");
-
-    if(seedRes.error){
-      q("stockGrid").innerHTML=`<div class="note">產品資料尚未建立：${seedRes.error.message}</div>`;
-      q("initialGrid").innerHTML=`<div class="note">期初設定目前沒有產品可輸入。請先確認 Supabase 的 products 資料表允許登入使用者新增資料。</div>`;
-      return;
-    }
-
-    pRes=await supabaseClient.from("products").select("id,name,sort_order").order("sort_order");
+  // 如果 products 是空的，先讓使用者清楚看到原因，不再只顯示空白。
+  if(products.length===0){
+    q("stockGrid").innerHTML='<div class="note">products 資料表目前沒有產品資料。</div>';
+    q("initialGrid").innerHTML="";
+    setSetupMsg("目前 products 資料表是空的。請按「建立／修復 6 種產品」。","#c62828");
+    renderProductSelects();
+    return;
   }
 
   const [sRes,tRes]=await Promise.all([
@@ -474,13 +497,14 @@ async function loadInventoryData(){
   const err=sRes.error||tRes.error;
   if(err){
     q("stockGrid").innerHTML=`<div class="note">讀取庫存資料失敗：${err.message}</div>`;
+    setSetupMsg("讀取庫存資料失敗："+err.message,"#c62828");
     return;
   }
 
-  products=pRes.data||[];
   initialRows=sRes.data||[];
   transactions=tRes.data||[];
 
+  setSetupMsg(`已載入 ${products.length} 種產品。`,"#238636");
   renderProductSelects();
   renderInitial();
   renderStocks();
