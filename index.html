@@ -1,144 +1,618 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101a7a"><meta name="apple-mobile-web-app-capable" content="yes"><link rel="manifest" href="manifest.json"><title>HD / PE 計算器</title>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101a7a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<title>佳信工作工具</title>
 <style>
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Microsoft JhengHei",sans-serif;
-  background:#f3f4f7;
-  color:#111;
-  min-height:100dvh;
-  overflow-x:hidden;
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Microsoft JhengHei",sans-serif;background:#f3f4f7;color:#111;min-height:100dvh;overflow-x:hidden}
+.wrap{width:100%;max-width:920px;margin:auto;padding:max(14px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+h1{font-size:clamp(22px,4vw,28px);margin:4px 0 16px}
+h2{font-size:clamp(19px,4vw,23px);margin:8px 0 12px}
+.mainnav,.tabs,.invnav{display:grid;gap:8px}
+.mainnav{grid-template-columns:repeat(3,1fr);margin-bottom:18px}
+.tabs{grid-template-columns:1fr 1fr 1fr}
+.invnav{grid-template-columns:repeat(4,1fr);margin:10px 0 14px}
+.mainbtn,.tab,.invbtn{border:0;border-radius:12px;padding:12px 6px;font-weight:800;font-size:clamp(14px,3.5vw,19px);min-height:48px;background:#ddd}
+.active{background:#101a7a!important;color:white!important}
+.card{margin-top:12px;background:white;padding:clamp(12px,3vw,18px);border-radius:16px}
+.row{display:grid;grid-template-columns:minmax(78px,30%) minmax(0,1fr) 40px;gap:8px;align-items:center;margin:10px 0}
+label{font-size:clamp(15px,3.4vw,18px);font-weight:600}
+input,select{min-width:0;width:100%;font-size:clamp(16px,3.6vw,20px);padding:10px 9px;border:1px solid #bbb;border-radius:9px;background:white}
+input.num{text-align:right}
+.r{display:grid;grid-template-columns:minmax(0,1fr) auto 28px;gap:8px;align-items:baseline;padding:10px 2px;border-bottom:1px solid #eee}
+.v{font-size:clamp(20px,4vw,25px);font-weight:800;color:#101a7a;text-align:right}
+.note{font-size:13px;color:#666;margin-top:14px;line-height:1.5}
+.audit{text-align:center;padding:30px 8px}.folder{font-size:52px}.audit-title{font-size:22px;font-weight:800;margin:8px}.audit-desc{font-size:16px;line-height:1.7;color:#555}.statusbox{margin-top:18px;padding:10px;background:#f1f2f5;border-radius:10px;color:#777}
+
+/* inventory */
+.stock-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stock-item{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#fafbfc;border:1px solid #e6e8ec;border-radius:12px}
+.stock-name{font-size:16px}.stock-num{font-size:26px;font-weight:800;color:#101a7a}
+.invform{display:grid;grid-template-columns:1.35fr 2fr 1.1fr 1fr auto;gap:10px;align-items:end}
+.invfilters{display:grid;grid-template-columns:1.35fr 1.35fr 1.8fr 1.1fr auto;gap:10px;align-items:end}
+.btn{border:0;border-radius:9px;padding:10px 14px;font-size:15px;cursor:pointer}
+.btn-blue{background:#0f6fff;color:#fff}.btn-green{background:#1f9d55;color:#fff}.btn-gray{background:#e9edf3;color:#222}.btn-red{background:#d33;color:#fff}
+.tablebox{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{padding:9px;border-bottom:1px solid #e7e9ed;text-align:center}
+th{background:#eef3fb}th:first-child,td:first-child{text-align:left}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:13px}
+.badge-in{background:#e9f7ef;color:#18723b}.badge-out{background:#fff2e5;color:#a65a00}
+.actions{display:flex;gap:6px;justify-content:center}
+.setup-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.setup-grid label{background:#fafbfc;border:1px solid #e7e9ed;padding:10px;border-radius:9px}
+.invsection{display:none}.invsection.activeinv{display:block}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:16px;z-index:1000}
+.modal-box{background:#fff;border-radius:14px;padding:18px;width:min(520px,100%);box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-buttons{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.date-wrap{position:relative}.date-input{cursor:text;padding-right:42px}.calendar-btn{position:absolute;right:4px;top:4px;width:34px;height:34px;border:0;background:transparent;font-size:17px;cursor:pointer}.hidden-date{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.result-count{font-size:14px;color:#666;margin:8px 0}
+.recycle-row{opacity:.72}
+
+@media(max-width:700px){
+ .wrap{max-width:560px}
+ .mainnav{grid-template-columns:1fr 1fr 1fr}
+ .invnav{grid-template-columns:1fr 1fr}
+ .stock-grid{grid-template-columns:1fr}
+ .invform,.invfilters{grid-template-columns:1fr 1fr}
+ .setup-grid{grid-template-columns:1fr 1fr}
+ .modal-grid{grid-template-columns:1fr}
 }
-.wrap{
-  width:100%;
-  max-width:560px;
-  margin:0 auto;
-  padding:
-    max(14px, env(safe-area-inset-top))
-    max(12px, env(safe-area-inset-right))
-    max(24px, env(safe-area-inset-bottom))
-    max(12px, env(safe-area-inset-left));
+@media(max-width:360px){
+ .wrap{padding-left:8px;padding-right:8px}
+ .card{padding:10px}
+ .row{grid-template-columns:72px minmax(0,1fr) 34px;gap:6px}
 }
-h1{
-  margin:4px 0 14px;
-  font-size:clamp(22px,6vw,28px);
-  line-height:1.2;
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>佳信工作工具</h1>
+
+<div class="mainnav">
+  <button id="prodBtn" class="mainbtn active" onclick="showSection('prod')">生產計算</button>
+  <button id="invBtn" class="mainbtn" onclick="showSection('inventory')">庫存管理</button>
+  <button id="auditBtn" class="mainbtn" onclick="showSection('audit')">稽核資料</button>
+</div>
+
+<section id="prod">
+<h2>生產計算</h2>
+<div class="tabs">
+  <button id="h" class="tab active" onclick="setT('HD')">HD</button>
+  <button id="p" class="tab" onclick="setT('PE')">PE</button>
+  <button id="s" class="tab" onclick="setT('SWEET')">地瓜袋</button>
+</div>
+<div id="normalCard" class="card">
+  <div class="row"><label>寬度</label><input id="w" class="num" type="text" inputmode="decimal" enterkeyhint="next"><b>cm</b></div>
+  <div class="row"><label>長度</label><input id="l" class="num" type="text" inputmode="decimal" enterkeyhint="next"><b>cm</b></div>
+  <div class="row"><label>厚度</label><input id="t" class="num" type="text" inputmode="decimal" enterkeyhint="next"><b>mm</b></div>
+  <div class="row"><label>預設重量</label><input id="kg" class="num" type="text" inputmode="decimal" enterkeyhint="done"><b>kg</b></div>
+  <div class="r"><span>每只重量</span><span id="piece" class="v">—</span><b>g</b></div>
+  <div class="r"><span>1公斤總只數</span><span id="count" class="v">—</span><b>只</b></div>
+  <div class="r"><span>預設重量總轉數</span><span id="turns" class="v">—</span><b>M</b></div>
+</div>
+<div id="sweetCard" class="card" style="display:none">
+  <div class="row"><label>實際轉數</label><input id="a1" class="num" type="text" inputmode="decimal" enterkeyhint="next"><b>M</b></div>
+  <div class="row"><label>實際重量</label><input id="a2" class="num" type="text" inputmode="decimal" enterkeyhint="done"><b>kg</b></div>
+  <div class="r"><span>誤差值</span><span id="err" class="v">—</span><b>%</b></div>
+  <div class="r"><span>標準值</span><span class="v">-3</span><b>%</b></div>
+</div>
+</section>
+
+<section id="inventory" style="display:none">
+<h2>客戶產品庫存管理</h2>
+
+<div id="authPanel" class="card">
+  <h2 style="margin-top:0">庫存系統登入</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end">
+    <label>電子郵件
+      <input type="email" id="loginEmail" autocomplete="username" placeholder="請輸入帳號">
+    </label>
+    <label>密碼
+      <input type="password" id="loginPassword" autocomplete="current-password" placeholder="請輸入密碼">
+    </label>
+    <button class="btn btn-blue" onclick="loginInventory()">登入</button>
+  </div>
+  <div id="loginMsg" class="note">登入後即可讀寫中央庫存資料。</div>
+</div>
+
+<div id="inventoryApp" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+    <div id="loginUser" class="note" style="margin:0"></div>
+    <button class="btn btn-gray" onclick="logoutInventory()">登出</button>
+  </div>
+
+<div class="invnav">
+  <button id="invHomeBtn" class="invbtn active" onclick="showInv('invHome')">目前庫存</button>
+  <button id="invHistoryBtn" class="invbtn" onclick="showInv('invHistory')">歷史紀錄</button>
+  <button id="invSetupBtn" class="invbtn" onclick="showInv('invSetup')">期初設定</button>
+  <button id="invRecycleBtn" class="invbtn" onclick="showInv('invRecycle')">回收筒</button>
+</div>
+
+<div id="invHome" class="invsection activeinv">
+  <div class="card">
+    <h2 style="margin-top:0">目前庫存</h2>
+    <div class="stock-grid" id="stockGrid"></div>
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">新增進出紀錄</h2>
+    <div class="invform">
+      <label>日期
+        <div class="date-wrap">
+          <input type="text" id="txDate" class="date-input" placeholder="YYYY-MM-DD" maxlength="10">
+          <button type="button" class="calendar-btn" onclick="openCalendar('txDate')">📅</button>
+          <input type="date" id="txDate_picker" class="hidden-date">
+        </div>
+      </label>
+      <label>產品<select id="txProduct"></select></label>
+      <label>類型
+        <select id="txType">
+          <option value="in">進貨</option>
+          <option value="out">出貨</option>
+        </select>
+      </label>
+      <label>數量<input type="number" id="txQty" min="1" step="1" value="40"></label>
+      <button class="btn btn-green" onclick="addTransaction()">新增紀錄</button>
+    </div>
+    <div class="note">預設數量為 40；日期點欄位任何位置即可修改，預設選取「日」。</div>
+  </div>
+</div>
+
+<div id="invHistory" class="invsection">
+  <div class="card">
+    <h2 style="margin-top:0">查詢進／出貨歷史紀錄</h2>
+    <div class="invfilters">
+      <label>開始日期
+        <div class="date-wrap">
+          <input type="text" id="fromDate" class="date-input" placeholder="YYYY-MM-DD" maxlength="10">
+          <button type="button" class="calendar-btn" onclick="openCalendar('fromDate')">📅</button>
+          <input type="date" id="fromDate_picker" class="hidden-date">
+        </div>
+      </label>
+      <label>結束日期
+        <div class="date-wrap">
+          <input type="text" id="toDate" class="date-input" placeholder="YYYY-MM-DD" maxlength="10">
+          <button type="button" class="calendar-btn" onclick="openCalendar('toDate')">📅</button>
+          <input type="date" id="toDate_picker" class="hidden-date">
+        </div>
+      </label>
+      <label>產品<select id="filterProduct"><option value="all">全部產品</option></select></label>
+      <label>類型
+        <select id="filterType">
+          <option value="all">全部</option>
+          <option value="in">進貨</option>
+          <option value="out">出貨</option>
+        </select>
+      </label>
+      <button class="btn btn-blue" onclick="renderHistory()">查詢</button>
+    </div>
+    <div class="note">開始日期按 Enter，結束日期會自動帶入相同日期並跳過去。</div>
+    <div id="resultCount" class="result-count"></div>
+    <div class="tablebox">
+      <table>
+        <thead><tr><th>日期</th><th>產品名稱</th><th>類型</th><th>數量</th><th>操作</th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="invSetup" class="invsection">
+  <div class="card">
+    <h2 style="margin-top:0">期初庫存設定</h2>
+    <div class="setup-grid" id="initialGrid"></div>
+    <div style="margin-top:12px">
+      <button class="btn btn-blue" onclick="saveInitial()">儲存期初庫存</button>
+      <span id="initialStatus" style="display:none;color:#238636;font-weight:700;margin-left:8px">已儲存</span>
+    </div>
+    <div class="note">通常只設定一次；之後目前庫存會依進、出貨紀錄自動計算。</div>
+  </div>
+</div>
+
+<div id="invRecycle" class="invsection">
+  <div class="card">
+    <h2 style="margin-top:0">回收筒</h2>
+    <div class="tablebox">
+      <table>
+        <thead><tr><th>日期</th><th>產品名稱</th><th>類型</th><th>數量</th><th>操作</th></tr></thead>
+        <tbody id="recycleBody"></tbody>
+      </table>
+    </div>
+    <div class="note">刪除紀錄只會移到回收筒，不會永久刪除；誤刪可恢復。</div>
+  </div>
+</div>
+</div>
+</section>
+
+<section id="audit" style="display:none">
+<h2>稽核資料</h2>
+<div class="card audit">
+  <div class="folder">📁</div>
+  <div class="audit-title">Dropbox 稽核文件</div>
+  <div class="audit-desc">之後可加入品質管理、生產管理、教育訓練、表單紀錄等分類，點選後直接開啟 Dropbox 文件。</div>
+  <div class="statusbox">目前尚未加入文件連結</div>
+</div>
+</section>
+</div>
+
+<div id="editModal" class="modal">
+  <div class="modal-box">
+    <h2 style="margin-top:0">修改紀錄</h2>
+    <div class="modal-grid">
+      <label>日期
+        <div class="date-wrap">
+          <input type="text" id="editDate" class="date-input" placeholder="YYYY-MM-DD" maxlength="10">
+          <button type="button" class="calendar-btn" onclick="openCalendar('editDate')">📅</button>
+          <input type="date" id="editDate_picker" class="hidden-date">
+        </div>
+      </label>
+      <label>產品<select id="editProduct"></select></label>
+      <label>類型
+        <select id="editType"><option value="in">進貨</option><option value="out">出貨</option></select>
+      </label>
+      <label>數量<input type="number" id="editQty" min="1" step="1"></label>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn btn-gray" onclick="closeEdit()">取消</button>
+      <button class="btn btn-blue" onclick="saveEdit()">儲存修改</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const q=x=>document.getElementById(x);
+
+/* main nav */
+let typ="HD";
+function showSection(x){
+  const ids=["prod","inventory","audit"];
+  ids.forEach(id=>q(id).style.display=id===x?"block":"none");
+  q("prodBtn").classList.toggle("active",x==="prod");
+  q("invBtn").classList.toggle("active",x==="inventory");
+  q("auditBtn").classList.toggle("active",x==="audit");
+  if(x==="inventory"){refreshAuth();}
 }
-.tabs{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
+
+/* production calculator */
+function setT(x){
+  typ=x;
+  q("h").classList.toggle("active",x==="HD");
+  q("p").classList.toggle("active",x==="PE");
+  q("s").classList.toggle("active",x==="SWEET");
+  q("normalCard").style.display=x==="SWEET"?"none":"block";
+  q("sweetCard").style.display=x==="SWEET"?"block":"none";
+  if(x==="HD"){w.value=90;l.value=76;t.value=.025;kg.value=100;calc()}
+  else if(x==="PE"){w.value=29;l.value=29;t.value=.05;kg.value=100;calc()}
+  else{a1.value=2400;a2.value=115.4;calcSweet()}
 }
-.tab{
-  width:100%;
-  min-height:48px;
-  padding:10px 8px;
-  border:0;
-  border-radius:12px;
-  font-size:clamp(17px,4.8vw,20px);
-  font-weight:700;
+function calc(){
+  let W=+w.value,L=+l.value,T=+t.value,K=+kg.value,c=typ==="HD"?.19:.184;
+  if(!(W>0&&L>0&&T>0))return;
+  let pc=W*L*T*c,b=243/W/T/c*1.03;
+  piece.textContent=pc.toFixed(4).replace(/0+$/,"").replace(/\.$/,"");
+  count.textContent=Math.floor(1000/pc);
+  turns.textContent=Math.floor(b*K/24.3)
 }
-.active{background:#101a7a;color:#fff}
-.card{
-  margin-top:12px;
-  background:#fff;
-  padding:clamp(12px,4vw,18px);
-  border-radius:16px;
+function calcSweet(){
+  let A=+a1.value,B=+a2.value;if(!(A>0))return;
+  let g=A/2058*100;err.textContent=((B-2.1-g)/g*100).toFixed(2)
 }
-.row{
-  display:grid;
-  grid-template-columns:minmax(78px,30%) minmax(0,1fr) 40px;
-  gap:8px;
-  align-items:center;
-  margin:10px 0;
-}
-label{
-  font-size:clamp(16px,4.3vw,19px);
-  font-weight:600;
-  white-space:nowrap;
-}
-input{
-  min-width:0;
-  width:100%;
-  font-size:clamp(19px,5.2vw,23px);
-  padding:10px 9px;
-  text-align:right;
-  border:1px solid #bbb;
-  border-radius:9px;
-  background:#fff;
-}
-.row>b{
-  font-size:clamp(14px,3.8vw,17px);
-}
-.r{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto 28px;
-  gap:8px;
-  align-items:baseline;
-  padding:10px 2px;
-  border-bottom:1px solid #eee;
-}
-.r>span:first-child{
-  font-size:clamp(15px,4vw,18px);
-}
-.v{
-  font-size:clamp(20px,5.5vw,25px);
-  font-weight:800;
-  color:#101a7a;
-  text-align:right;
-}
-.note{
-  font-size:clamp(12px,3.5vw,14px);
-  color:#666;
-  margin-top:14px;
-  line-height:1.5;
-}
-@media (max-width:360px){
-  .wrap{padding-left:8px;padding-right:8px}
-  .card{padding:10px}
-  .row{grid-template-columns:72px minmax(0,1fr) 34px;gap:6px}
-  .r{grid-template-columns:minmax(0,1fr) auto 24px;gap:6px}
-}
-@media (min-width:700px){
-  .wrap{padding-top:24px}
-  .card{padding:20px}
-}
-.tabs.three{grid-template-columns:1fr 1fr 1fr}.tabs.three .tab{font-size:clamp(15px,4vw,19px)}
-</style></head>
-<body><div class="wrap"><h1>HD / PE 塑膠袋計算器</h1><div class="tabs three"><button id="h" class="tab active" onclick="setT('HD')">HD</button><button id="p" class="tab" onclick="setT('PE')">PE</button><button id="s" class="tab" onclick="setT('SWEET')">地瓜袋</button></div><div id="normalCard" class="card">
-<div class="row"><label>寬度</label><input id="w" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off"><b>cm</b></div><div class="row"><label>長度</label><input id="l" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off"><b>cm</b></div><div class="row"><label>厚度</label><input id="t" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off"><b>mm</b></div><div class="row"><label>預設重量</label><input id="kg" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off"><b>kg</b></div>
-<div class="r"><span>每只重量</span><span id="piece" class="v">—</span><b>g</b></div><div class="r"><span>1公斤總只數</span><span id="count" class="v">—</span><b>只</b></div><div class="r"><span>預設重量總轉數</span><span id="turns" class="v">—</span><b>M</b></div>
-<div class="note">轉數公式：243 ÷ 寬度 ÷ 厚度 ÷ 係數 × 1.03。HD係數0.19；PE係數0.184。</div></div><div id="sweetCard" class="card" style="display:none">
-<div class="row"><label>實際轉數</label><input id="a1" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off"><b>M</b></div>
-<div class="row"><label>實際重量</label><input id="a2" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off"><b>kg</b></div>
-<div class="r"><span>誤差值</span><span id="errorValue" class="v">—</span><b>%</b></div>
-<div class="r"><span>標準值</span><span class="v">-3</span><b>%</b></div>
-</div></div>
-<script>let typ="HD";const q=x=>document.getElementById(x);function setT(x){typ=x;q("h").classList.toggle("active",x==="HD");q("p").classList.toggle("active",x==="PE");q("s").classList.toggle("active",x==="SWEET");q("normalCard").style.display=x==="SWEET"?"none":"block";q("sweetCard").style.display=x==="SWEET"?"block":"none";if(x==="HD"){q("w").value=90;q("l").value=76;q("t").value=.025;q("kg").value=100;calc();}else if(x==="PE"){q("w").value=29;q("l").value=29;q("t").value=.05;q("kg").value=100;calc();}else{q("a1").value=2400;q("a2").value=115.4;calcSweet();}}function calc(){let w=+q("w").value,l=+q("l").value,t=+q("t").value,kg=+q("kg").value,k=typ==="HD"?.19:.184;if(!(w>0&&l>0&&t>0)){return}let piece=w*l*t*k,base=243/w/t/k*1.03,turns=base*kg/24.3;q("piece").textContent=piece.toFixed(4).replace(/0+$/,"").replace(/\.$/,"");q("count").textContent=Math.floor(1000/piece);q("turns").textContent=Math.floor(turns)}["w","l","t","kg"].forEach(x=>{
-  const el=q(x);
-  el.addEventListener("input",calc);
-  el.addEventListener("focus",()=>setTimeout(()=>el.select(),0));
+const normal=["w","l","t","kg"];
+normal.forEach((id,i)=>{
+  let e=q(id);
+  e.addEventListener("input",calc);
+  e.addEventListener("focus",()=>setTimeout(()=>e.select(),0));
+  e.addEventListener("keydown",z=>{
+    if(z.key==="Enter"||z.key==="ArrowDown"){z.preventDefault();if(i<3)q(normal[i+1]).focus();else if(z.key==="Enter")e.blur()}
+    else if(z.key==="ArrowUp"){z.preventDefault();if(i>0)q(normal[i-1]).focus()}
+  })
 });
-const order=["w","l","t","kg"];
-order.forEach((id,i)=>{
-  q(id).addEventListener("keydown",e=>{
-    if(e.key==="Enter" || e.key==="ArrowDown"){
-      e.preventDefault();
-      if(i<order.length-1){
-        q(order[i+1]).focus();
-      }else if(e.key==="Enter"){
-        q(id).blur();
-      }
-    }else if(e.key==="ArrowUp"){
-      e.preventDefault();
-      if(i>0){
-        q(order[i-1]).focus();
-      }
+["a1","a2"].forEach((id,i)=>{
+  let e=q(id);
+  e.addEventListener("input",calcSweet);
+  e.addEventListener("focus",()=>setTimeout(()=>e.select(),0));
+  e.addEventListener("keydown",z=>{
+    if((z.key==="Enter"||z.key==="ArrowDown")&&i===0){z.preventDefault();a2.focus()}
+    else if(z.key==="ArrowUp"&&i===1){z.preventDefault();a1.focus()}
+    else if(z.key==="Enter"&&i===1){z.preventDefault();e.blur()}
+  })
+});
+
+/* inventory - Supabase central database */
+const SUPABASE_URL="https://bwzyaraixllllsbkmhdv.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_4Wyzeg59viOodyb4ZXicRQ_5Mg7sBmC";
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+
+let products=[];
+let initialRows=[];
+let transactions=[];
+let editingId=null;
+let currentSession=null;
+
+async function refreshAuth(){
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  currentSession=session;
+  applyAuthUI();
+  if(session) await loadInventoryData();
+}
+function applyAuthUI(){
+  const logged=!!currentSession;
+  q("authPanel").style.display=logged?"none":"block";
+  q("inventoryApp").style.display=logged?"block":"none";
+  q("loginUser").textContent=logged?`已登入：${currentSession.user.email}`:"";
+}
+async function loginInventory(){
+  const email=q("loginEmail").value.trim();
+  const password=q("loginPassword").value;
+  q("loginMsg").textContent="登入中…";
+  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error){
+    q("loginMsg").textContent="登入失敗："+error.message;
+    return;
+  }
+  currentSession=data.session;
+  q("loginPassword").value="";
+  applyAuthUI();
+  await loadInventoryData();
+}
+async function logoutInventory(){
+  await supabaseClient.auth.signOut();
+  currentSession=null;
+  products=[];initialRows=[];transactions=[];
+  applyAuthUI();
+}
+supabaseClient.auth.onAuthStateChange((_event,session)=>{
+  currentSession=session;
+  applyAuthUI();
+});
+
+function showInv(id){
+  document.querySelectorAll(".invsection").forEach(x=>x.classList.remove("activeinv"));
+  q(id).classList.add("activeinv");
+  const map={invHome:"invHomeBtn",invHistory:"invHistoryBtn",invSetup:"invSetupBtn",invRecycle:"invRecycleBtn"};
+  Object.values(map).forEach(b=>q(b).classList.remove("active"));
+  q(map[id]).classList.add("active");
+  if(id==="invHistory")renderHistory();
+  if(id==="invRecycle")renderRecycle();
+}
+function todayLocal(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function validDateString(v){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return false;
+  const [y,m,d]=v.split("-").map(Number),dt=new Date(y,m-1,d);
+  return dt.getFullYear()===y&&dt.getMonth()===m-1&&dt.getDate()===d;
+}
+function selectSegment(el,segment){
+  const ranges={year:[0,4],month:[5,7],day:[8,10]},r=ranges[segment]||ranges.day;
+  requestAnimationFrame(()=>el.setSelectionRange(r[0],r[1]));
+  el.dataset.segment=segment;
+}
+function setupDateInput(id){
+  const el=q(id),picker=q(id+"_picker");
+  el.addEventListener("focus",()=>selectSegment(el,"day"));
+  el.addEventListener("mousedown",e=>{
+    if(document.activeElement!==el){
+      e.preventDefault();el.focus();selectSegment(el,"day");
     }
   });
-});function calcSweet(){const a1=parseFloat(q("a1").value),a2=parseFloat(q("a2").value);if(!(a1>0)||!Number.isFinite(a2)){q("errorValue").textContent="—";return;}const g1=a1/2058*100;const error=(a2-2.1-g1)/g1*100;q("errorValue").textContent=error.toFixed(2);}
-["a1","a2"].forEach(id=>{const el=q(id);el.addEventListener("input",calcSweet);el.addEventListener("focus",()=>setTimeout(()=>el.select(),0));});
-q("a1").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key==="ArrowDown"){e.preventDefault();q("a2").focus();}});
-q("a2").addEventListener("keydown",e=>{if(e.key==="ArrowUp"){e.preventDefault();q("a1").focus();}else if(e.key==="Enter"){e.preventDefault();q("a2").blur();}});
-if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));setT("HD");</script></body></html>
+  el.addEventListener("keydown",e=>{
+    const order=["year","month","day"];
+    let idx=order.indexOf(el.dataset.segment||"day");
+    if(e.key==="ArrowLeft"){e.preventDefault();idx=Math.max(0,idx-1);selectSegment(el,order[idx])}
+    else if(e.key==="ArrowRight"){e.preventDefault();idx=Math.min(2,idx+1);selectSegment(el,order[idx])}
+    else if(e.key==="Enter"&&id==="fromDate"){
+      e.preventDefault();
+      if(validDateString(el.value))q("toDate").value=el.value;
+      q("toDate").focus();selectSegment(q("toDate"),"day");
+    }
+  });
+  picker.addEventListener("change",()=>{
+    if(picker.value){el.value=picker.value;el.focus();selectSegment(el,"day")}
+  });
+}
+function openCalendar(id){
+  const picker=q(id+"_picker"),el=q(id);
+  if(validDateString(el.value))picker.value=el.value;
+  if(picker.showPicker)picker.showPicker();else picker.click();
+}
+
+async function loadInventoryData(){
+  if(!currentSession)return;
+  q("stockGrid").innerHTML='<div class="note">載入中央資料中…</div>';
+  const [pRes,sRes,tRes]=await Promise.all([
+    supabaseClient.from("products").select("id,name,sort_order").order("sort_order"),
+    supabaseClient.from("initial_stock").select("id,product_id,quantity"),
+    supabaseClient.from("inventory_transactions").select("id,txn_date,product_id,txn_type,quantity,is_deleted,created_at,updated_at").order("txn_date",{ascending:false}).order("id",{ascending:false})
+  ]);
+  const err=pRes.error||sRes.error||tRes.error;
+  if(err){
+    q("stockGrid").innerHTML=`<div class="note">讀取資料失敗：${err.message}</div>`;
+    return;
+  }
+  products=pRes.data||[];
+  initialRows=sRes.data||[];
+  transactions=tRes.data||[];
+  renderProductSelects();
+  renderInitial();
+  renderStocks();
+  renderHistory();
+  renderRecycle();
+}
+
+function productNameById(id){
+  const p=products.find(x=>Number(x.id)===Number(id));
+  return p?p.name:`產品 ${id}`;
+}
+function initialQty(productId){
+  const r=initialRows.find(x=>Number(x.product_id)===Number(productId));
+  return r?Number(r.quantity):0;
+}
+function getTotals(productId){
+  let tin=0,tout=0;
+  transactions.forEach(t=>{
+    if(t.is_deleted)return;
+    if(Number(t.product_id)!==Number(productId))return;
+    if(t.txn_type==="in")tin+=Number(t.quantity);
+    else tout+=Number(t.quantity);
+  });
+  return {current:initialQty(productId)+tin-tout};
+}
+function renderProductSelects(){
+  q("txProduct").innerHTML="";
+  q("editProduct").innerHTML="";
+  q("filterProduct").innerHTML='<option value="all">全部產品</option>';
+  products.forEach(p=>{
+    ["txProduct","editProduct"].forEach(id=>{
+      const o=document.createElement("option");o.value=p.id;o.textContent=p.name;q(id).appendChild(o);
+    });
+    const f=document.createElement("option");f.value=p.id;f.textContent=p.name;q("filterProduct").appendChild(f);
+  });
+}
+function renderInitial(){
+  q("initialGrid").innerHTML="";
+  products.forEach(p=>{
+    const lab=document.createElement("label");lab.textContent=p.name;
+    const inp=document.createElement("input");inp.type="number";inp.min="0";inp.step="1";inp.value=initialQty(p.id);inp.id="init_"+p.id;
+    lab.appendChild(inp);q("initialGrid").appendChild(lab);
+  });
+}
+async function saveInitial(){
+  q("initialStatus").style.display="inline";
+  q("initialStatus").textContent="儲存中…";
+  for(const p of products){
+    const qty=Number(q("init_"+p.id).value||0);
+    const row=initialRows.find(x=>Number(x.product_id)===Number(p.id));
+    let res;
+    if(row){
+      res=await supabaseClient.from("initial_stock").update({quantity:qty,updated_at:new Date().toISOString()}).eq("id",row.id);
+    }else{
+      res=await supabaseClient.from("initial_stock").insert({product_id:p.id,quantity:qty});
+    }
+    if(res.error){
+      q("initialStatus").textContent="失敗："+res.error.message;
+      return;
+    }
+  }
+  await loadInventoryData();
+  q("initialStatus").textContent="已儲存";
+  setTimeout(()=>q("initialStatus").style.display="none",1400);
+}
+function renderStocks(){
+  q("stockGrid").innerHTML="";
+  products.forEach(p=>{
+    const d=document.createElement("div");d.className="stock-item";
+    d.innerHTML=`<div class="stock-name">${p.name}</div><div class="stock-num">${getTotals(p.id).current}</div>`;
+    q("stockGrid").appendChild(d);
+  });
+}
+async function addTransaction(){
+  const date=q("txDate").value,productId=Number(q("txProduct").value),type=q("txType").value,qty=Number(q("txQty").value);
+  if(!validDateString(date)){alert("請輸入正確日期");return}
+  if(!qty||qty<=0){alert("請輸入正確數量");return}
+  const {error}=await supabaseClient.from("inventory_transactions").insert({
+    txn_date:date,product_id:productId,txn_type:type,quantity:qty,is_deleted:false
+  });
+  if(error){alert("新增失敗："+error.message);return}
+  q("txQty").value=40;
+  await loadInventoryData();
+  alert("已新增紀錄");
+}
+function filteredHistory(includeDeleted=false){
+  const from=q("fromDate").value,to=q("toDate").value,fp=q("filterProduct").value,ft=q("filterType").value;
+  return transactions.filter(t=>{
+    if(includeDeleted ? !t.is_deleted : t.is_deleted)return false;
+    if(from&&validDateString(from)&&t.txn_date<from)return false;
+    if(to&&validDateString(to)&&t.txn_date>to)return false;
+    if(fp!=="all"&&Number(t.product_id)!==Number(fp))return false;
+    if(ft!=="all"&&t.txn_type!==ft)return false;
+    return true;
+  }).sort((a,b)=>b.txn_date.localeCompare(a.txn_date)||Number(b.id)-Number(a.id));
+}
+function renderHistory(){
+  if(!currentSession)return;
+  const rows=filteredHistory(false);
+  q("resultCount").textContent=`共 ${rows.length} 筆紀錄`;
+  q("historyBody").innerHTML="";
+  if(!rows.length){q("historyBody").innerHTML='<tr><td colspan="5" style="text-align:center;color:#777">查無紀錄</td></tr>';return}
+  rows.forEach(t=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${t.txn_date}</td><td>${productNameById(t.product_id)}</td>
+      <td><span class="badge ${t.txn_type==="in"?"badge-in":"badge-out"}">${t.txn_type==="in"?"進貨":"出貨"}</span></td>
+      <td>${t.quantity}</td><td><div class="actions">
+      <button class="btn btn-blue" onclick="openEdit(${t.id})">修改</button>
+      <button class="btn btn-red" onclick="moveToRecycle(${t.id})">刪除</button>
+      </div></td>`;
+    q("historyBody").appendChild(tr);
+  });
+}
+function openEdit(id){
+  const t=transactions.find(x=>Number(x.id)===Number(id));if(!t)return;
+  editingId=id;
+  q("editDate").value=t.txn_date;q("editProduct").value=t.product_id;q("editType").value=t.txn_type;q("editQty").value=t.quantity;
+  q("editModal").style.display="flex";
+  setTimeout(()=>{q("editDate").focus();selectSegment(q("editDate"),"day")},50);
+}
+function closeEdit(){q("editModal").style.display="none";editingId=null}
+async function saveEdit(){
+  const t=transactions.find(x=>Number(x.id)===Number(editingId));if(!t)return;
+  const date=q("editDate").value,productId=Number(q("editProduct").value),type=q("editType").value,qty=Number(q("editQty").value);
+  if(!validDateString(date)){alert("請輸入正確日期");return}
+  if(!qty||qty<=0){alert("請輸入正確數量");return}
+  if(!confirm("確認儲存這次修改嗎？"))return;
+  const {error}=await supabaseClient.from("inventory_transactions").update({
+    txn_date:date,product_id:productId,txn_type:type,quantity:qty,updated_at:new Date().toISOString()
+  }).eq("id",editingId);
+  if(error){alert("修改失敗："+error.message);return}
+  closeEdit();
+  await loadInventoryData();
+}
+async function moveToRecycle(id){
+  const t=transactions.find(x=>Number(x.id)===Number(id));if(!t)return;
+  if(!confirm(`確定刪除？\n${t.txn_date}\n${productNameById(t.product_id)}\n${t.txn_type==="in"?"進貨":"出貨"} ${t.quantity}\n\n刪除後會移到回收筒，可再恢復。`))return;
+  const {error}=await supabaseClient.from("inventory_transactions").update({
+    is_deleted:true,updated_at:new Date().toISOString()
+  }).eq("id",id);
+  if(error){alert("刪除失敗："+error.message);return}
+  await loadInventoryData();
+}
+function renderRecycle(){
+  if(!currentSession)return;
+  q("recycleBody").innerHTML="";
+  const rows=transactions.filter(t=>t.is_deleted).sort((a,b)=>b.txn_date.localeCompare(a.txn_date)||Number(b.id)-Number(a.id));
+  if(!rows.length){q("recycleBody").innerHTML='<tr><td colspan="5" style="text-align:center;color:#777">回收筒目前沒有資料</td></tr>';return}
+  rows.forEach(t=>{
+    const tr=document.createElement("tr");tr.className="recycle-row";
+    tr.innerHTML=`<td>${t.txn_date}</td><td>${productNameById(t.product_id)}</td><td>${t.txn_type==="in"?"進貨":"出貨"}</td><td>${t.quantity}</td>
+      <td><button class="btn btn-green" onclick="restoreTx(${t.id})">恢復</button></td>`;
+    q("recycleBody").appendChild(tr);
+  });
+}
+async function restoreTx(id){
+  if(!confirm("確定恢復這筆紀錄嗎？"))return;
+  const {error}=await supabaseClient.from("inventory_transactions").update({
+    is_deleted:false,updated_at:new Date().toISOString()
+  }).eq("id",id);
+  if(error){alert("恢復失敗："+error.message);return}
+  await loadInventoryData();
+}
+
+const today=todayLocal();
+q("txDate").value=today;q("fromDate").value=today;q("toDate").value=today;
+["txDate","fromDate","toDate","editDate"].forEach(setupDateInput);
+refreshAuth();
+
+if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
+setT("HD");
+</script>
+</body>
+</html>
