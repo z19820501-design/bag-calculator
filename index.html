@@ -381,6 +381,7 @@ function showInv(id){
   Object.values(map).forEach(b=>q(b).classList.remove("active"));
   q(map[id]).classList.add("active");
   if(id==="invHistory")renderHistory();
+  if(id==="invSetup")renderInitial();
   if(id==="invRecycle")renderRecycle();
 }
 function todayLocal(){
@@ -426,22 +427,60 @@ function openCalendar(id){
   if(picker.showPicker)picker.showPicker();else picker.click();
 }
 
+const DEFAULT_PRODUCTS=[
+  {name:"18Kg LDPE 袋(黃)",sort_order:1},
+  {name:"18Kg LDPE 袋(綠)",sort_order:2},
+  {name:"18Kg LDPE 袋(紅)",sort_order:3},
+  {name:"18Kg LDPE 袋(藍)",sort_order:4},
+  {name:"18Kg LDPE 袋(橘)",sort_order:5},
+  {name:"18Kg LDPE 袋(紫)",sort_order:6}
+];
+
 async function loadInventoryData(){
   if(!currentSession)return;
   q("stockGrid").innerHTML='<div class="note">載入中央資料中…</div>';
-  const [pRes,sRes,tRes]=await Promise.all([
-    supabaseClient.from("products").select("id,name,sort_order").order("sort_order"),
+
+  let pRes=await supabaseClient.from("products").select("id,name,sort_order").order("sort_order");
+
+  if(pRes.error){
+    q("stockGrid").innerHTML=`<div class="note">讀取產品資料失敗：${pRes.error.message}</div>`;
+    q("initialGrid").innerHTML=`<div class="note">無法載入期初庫存設定。</div>`;
+    return;
+  }
+
+  // 第一次使用時，如果 products 資料表是空的，自動建立固定 6 種產品
+  if((pRes.data||[]).length===0){
+    q("stockGrid").innerHTML='<div class="note">第一次使用，正在建立 6 種產品…</div>';
+
+    const seedRes=await supabaseClient
+      .from("products")
+      .insert(DEFAULT_PRODUCTS)
+      .select("id,name,sort_order");
+
+    if(seedRes.error){
+      q("stockGrid").innerHTML=`<div class="note">產品資料尚未建立：${seedRes.error.message}</div>`;
+      q("initialGrid").innerHTML=`<div class="note">期初設定目前沒有產品可輸入。請先確認 Supabase 的 products 資料表允許登入使用者新增資料。</div>`;
+      return;
+    }
+
+    pRes=await supabaseClient.from("products").select("id,name,sort_order").order("sort_order");
+  }
+
+  const [sRes,tRes]=await Promise.all([
     supabaseClient.from("initial_stock").select("id,product_id,quantity"),
     supabaseClient.from("inventory_transactions").select("id,txn_date,product_id,txn_type,quantity,is_deleted,created_at,updated_at").order("txn_date",{ascending:false}).order("id",{ascending:false})
   ]);
-  const err=pRes.error||sRes.error||tRes.error;
+
+  const err=sRes.error||tRes.error;
   if(err){
-    q("stockGrid").innerHTML=`<div class="note">讀取資料失敗：${err.message}</div>`;
+    q("stockGrid").innerHTML=`<div class="note">讀取庫存資料失敗：${err.message}</div>`;
     return;
   }
+
   products=pRes.data||[];
   initialRows=sRes.data||[];
   transactions=tRes.data||[];
+
   renderProductSelects();
   renderInitial();
   renderStocks();
